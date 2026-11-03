@@ -1,0 +1,36 @@
+
+name: GitHub Projects Tracker
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  issues: read
+  pull-requests: read
+
+jobs:
+  track-issue:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check linked issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          echo "Pull request was merged."
+
+          if [[ "$PR_BODY" =~ [Cc]loses[[:space:]]+\#([0-9]+) ]]; then
+            ISSUE_NUMBER="${BASH_REMATCH[1]}"
+
+            echo "Linked issue: #$ISSUE_NUMBER"
+
+            gh issue view "$ISSUE_NUMBER" \
+              --repo "$GITHUB_REPOSITORY" \
+              --json state \
+              --jq '.state'
+          else
+            echo "No Closes #N reference found."
+          fi
